@@ -37,7 +37,7 @@ public class IntegrationAdapter {
     public ApiResponse<Map<String, Object>> callExternalApi(String interfaceName, ApiRequest<?> apiRequest) {
         try {
             // PRE HOOK: manipulate/validate/augment the request
-            apiRequest = preHookProcessor.process(apiRequest);
+            apiRequest = preHookProcessor.process(apiRequest, interfaceName);
 
             // 1. Load interface JSON spec
             Map<String, Object> spec = specLoader.loadInterfaceSpec(interfaceName);
@@ -81,12 +81,18 @@ public class IntegrationAdapter {
             Map<String, Object> mappedResponse = ResponseMapper.mapResponse(externalResponse, responseDef);
 
             // POST HOOK: manipulate/validate/augment the mapped response
-            mappedResponse = postHookProcessor.process(mappedResponse);
+            mappedResponse = postHookProcessor.process(mappedResponse, interfaceName);
 
             // 6. Return wrapped API response
+            String statusMessage;
+            if (interfaceName != null && (interfaceName.toLowerCase().contains("fundtransfernapas") || interfaceName.toLowerCase().contains("fundtransfercitad"))) {
+                statusMessage = "Fund Transfer processed successfully";
+            } else {
+                statusMessage = "Corporate Data fetched successfully";
+            }
             return new ApiResponse<>(
                     0,
-                    new ResponseHeader("200", "Corporate Data fetched successfully"),
+                    new ResponseHeader("200", statusMessage),
                     mappedResponse
             );
 

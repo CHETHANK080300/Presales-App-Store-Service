@@ -17,7 +17,8 @@ public class InterfaceSpecLoader {
 
     public Map<String, Object> loadInterfaceSpec(String interfaceName) throws Exception {
         // Load JSON file from external path specified in properties
-        File file = new File(interfaceJsonPath, interfaceName + ".json");
+        String fileName = interfaceName.endsWith(".json") ? interfaceName : interfaceName + ".json";
+        File file = new File(interfaceJsonPath, fileName);
         return objectMapper.readValue(file, Map.class);
     }
 }
