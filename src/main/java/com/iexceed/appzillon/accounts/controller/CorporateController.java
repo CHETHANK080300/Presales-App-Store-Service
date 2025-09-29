@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.iexceed.appzillon.accounts.dto.ApiRequest;
 import com.iexceed.appzillon.accounts.dto.ApiResponse;
 import com.iexceed.appzillon.accounts.dto.CorporateResponseDTO;
+import com.iexceed.appzillon.accounts.dto.ResponseHeader;
 import com.iexceed.appzillon.accounts.service.CorporateService;
 import com.iexceed.appzillon.accounts.service.IntegrationAdapter;
 
@@ -33,17 +34,16 @@ public class CorporateController {
     @PostMapping("/corporate/accounts")
     public ApiResponse getCorporateAccounts(@RequestBody ApiRequest request) {
         Map<String, Object> responseMap = corporateService.getCorporateAccounts(request);
-
-        // Null-safe mapping
-        String customerId = Objects.toString(responseMap.get("customer_ID"), "");
-        String accountNo = Objects.toString(responseMap.get("ACCOUNT_NO"), "");
-        // ...map other fields similarly
-
         ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setServiceStatusCode(0);
-        apiResponse.setResponseHeader(new ResponseHeader("0", "Corporate data fetched successfully"));
-        apiResponse.setResponseBody(responseMap);
-
+        if (responseMap != null) {
+            apiResponse.setServiceStatusCode(0);
+            apiResponse.setResponseHeader(new ResponseHeader("0", "Corporate data fetched successfully"));
+            apiResponse.setResponseBody(responseMap);
+        } else {
+            apiResponse.setServiceStatusCode(1);
+            apiResponse.setResponseHeader(new ResponseHeader("1", "No data returned from integration"));
+            apiResponse.setResponseBody(null);
+        }
         return apiResponse;
     }
 

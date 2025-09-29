@@ -8,12 +8,22 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.iexceed.appzillon.accounts.dto.ApiRequest;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.iexceed.appzillon.accounts.service.IntegrationAdapter;
+import com.iexceed.appzillon.accounts.dto.ApiResponse;
+
 @Service
 public class CorporateService {
 
     private static final Logger logger = LoggerFactory.getLogger(CorporateService.class);
 
     private final RestTemplate restTemplate;
+
+    @Autowired
+    private IntegrationAdapter integrationAdapter;
 
     // Postman Mock URL (customerId is a path variable)
     private static final String MOCK_URL =
@@ -46,5 +56,17 @@ public class CorporateService {
         logger.debug("Mapped DTO: {}", dto);
 
         return dto;
+    }
+
+    // Added for dynamic API
+    public Map<String, Object> getCorporateAccounts(ApiRequest request) {
+        // Delegate to IntegrationAdapter for dynamic mapping
+        String interfaceName = null;
+        if (request != null && request.getRequestHeader() != null) {
+            interfaceName = request.getRequestHeader().getInterfaceName();
+        }
+        if (interfaceName == null) interfaceName = "Customer360"; // fallback
+        ApiResponse<Map<String, Object>> apiResponse = integrationAdapter.callExternalApi(interfaceName, request);
+        return apiResponse != null ? apiResponse.getResponseBody() : null;
     }
 }
