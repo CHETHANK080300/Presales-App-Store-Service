@@ -9,7 +9,9 @@ import com.iexceed.appzillon.appstore.repository.AppMasterRepository;
 import com.iexceed.appzillon.appstore.service.AppMasterService;
 import com.iexceed.appzillon.appstore.util.FileValidationUtils;
 import com.iexceed.appzillon.appstore.util.PlistUtils;
+import com.iexceed.appzillon.appstore.util.QrCodeUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +20,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AppMasterServiceImpl implements AppMasterService {
@@ -34,6 +39,9 @@ public class AppMasterServiceImpl implements AppMasterService {
 
     @Value("${app.download.context-path}")
     private String downloadContextPath;
+
+    @Value("${app.qr.size:250}")
+    private int qrSize;
 
     @Override
     @Transactional
@@ -53,11 +61,15 @@ public class AppMasterServiceImpl implements AppMasterService {
         String ipaPath = null;
         String plistPath = null;
         String imagePath = null;
+        String androidQrPath = null;
+        String iosQrPath = null;
 
         String apkDownloadUrl = null;
         String ipaDownloadUrl = null;
         String plistDownloadUrl = null;
         String imageDownloadUrl = null;
+        String androidQrUrl = null;
+        String iosQrUrl = null;
 
         try {
             Path appBasePath = Paths.get(basePath, appId);
@@ -71,6 +83,14 @@ public class AppMasterServiceImpl implements AppMasterService {
                 Files.copy(apkFile.getInputStream(), apkTarget, StandardCopyOption.REPLACE_EXISTING);
                 apkPath = apkTarget.toString();
                 apkDownloadUrl = buildDownloadUrl(appId, "apk/apkFile.apk");
+
+                // Android QR
+                Path qrDir = appBasePath.resolve("qr");
+                Files.createDirectories(qrDir);
+                Path androidQrTarget = qrDir.resolve("android_qr.png");
+                QrCodeUtils.generateQrCode(apkDownloadUrl, qrSize, qrSize, androidQrTarget);
+                androidQrPath = androidQrTarget.toString();
+                androidQrUrl = buildDownloadUrl(appId, "qr/android_qr.png");
             }
 
             // IPA + PLIST
@@ -83,10 +103,6 @@ public class AppMasterServiceImpl implements AppMasterService {
                 ipaDownloadUrl = buildDownloadUrl(appId, "ipa/ipaFile.ipa");
 
                 Path plistTarget = ipaDir.resolve("ipaPlistFile.plist");
-                // Requirement 2: Backend must dynamically generate plist file after IPA upload
-                // Even if plistFile is provided (backward compatibility), we can choose to overwrite or prioritize dynamic generation
-                // Requirement 3: Generate {basePath}/{appId}/ipa/ipaPlistFile.plist
-
                 String dynamicPlistDownloadUrl = buildDownloadUrl(appId, "ipa/ipaPlistFile.plist");
                 PlistUtils.generateIpaPlist(
                         plistTarget,
@@ -96,8 +112,15 @@ public class AppMasterServiceImpl implements AppMasterService {
                         ipaDownloadUrl
                 );
                 plistPath = plistTarget.toString();
-                // Requirement 13: iOS OTA Support
                 plistDownloadUrl = "itms-services://?action=download-manifest&url=" + dynamicPlistDownloadUrl;
+
+                // iOS QR
+                Path qrDir = appBasePath.resolve("qr");
+                Files.createDirectories(qrDir);
+                Path iosQrTarget = qrDir.resolve("ios_qr.png");
+                QrCodeUtils.generateQrCode(plistDownloadUrl, qrSize, qrSize, iosQrTarget);
+                iosQrPath = iosQrTarget.toString();
+                iosQrUrl = buildDownloadUrl(appId, "qr/ios_qr.png");
             }
 
             // Image
@@ -130,6 +153,10 @@ public class AppMasterServiceImpl implements AppMasterService {
                     .ipaDownloadUrl(ipaDownloadUrl)
                     .plistDownloadUrl(plistDownloadUrl)
                     .imageDownloadUrl(imageDownloadUrl)
+                    .androidQrPath(androidQrPath)
+                    .iosQrPath(iosQrPath)
+                    .androidQrUrl(androidQrUrl)
+                    .iosQrUrl(iosQrUrl)
                     .appLogo(imagePath)
                     .createdBy(requestDto.getCreatedBy())
                     .updatedBy(requestDto.getCreatedBy())
@@ -139,19 +166,26 @@ public class AppMasterServiceImpl implements AppMasterService {
 
             repository.save(entity);
 
-            return AppMasterResponseDto.builder()
-                    .status("SUCCESS")
-                    .message("Application uploaded successfully")
-                    .appId(appId)
-                    .apkDownloadUrl(apkDownloadUrl)
-                    .ipaDownloadUrl(ipaDownloadUrl)
-                    .plistDownloadUrl(plistDownloadUrl)
-                    .imageDownloadUrl(imageDownloadUrl)
-                    .build();
+            return mapToResponseDto(entity, "SUCCESS", "Application uploaded successfully");
 
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            log.error("Failed to store files", ex);
             throw new FileStorageException("Failed to store files", ex);
         }
+    }
+
+    @Override
+    public List<AppMasterResponseDto> getAppList(String accessGroup) {
+        List<AppMasterEntity> entities;
+        if ("Admin".equalsIgnoreCase(accessGroup)) {
+            entities = repository.findAllByOrderByCreatedAtDesc();
+        } else {
+            entities = repository.findByAccessGroupOrderByCreatedAtDesc(accessGroup);
+        }
+
+        return entities.stream()
+                .map(entity -> mapToResponseDto(entity, null, null))
+                .collect(Collectors.toList());
     }
 
     private void validateRequest(AppMasterRequestDto requestDto) {
@@ -184,5 +218,28 @@ public class AppMasterServiceImpl implements AppMasterService {
 
     private String buildDownloadUrl(String appId, String filePath) {
         return downloadBaseUrl + downloadContextPath + "/" + appId + "/" + filePath;
+    }
+
+    private AppMasterResponseDto mapToResponseDto(AppMasterEntity entity, String status, String message) {
+        return AppMasterResponseDto.builder()
+                .status(status)
+                .message(message)
+                .appId(entity.getId())
+                .appName(entity.getAppName())
+                .bundleId(entity.getBundleId())
+                .platform(entity.getPlatform())
+                .category(entity.getCategory())
+                .accessGroup(entity.getAccessGroup())
+                .description(entity.getDescription())
+                .releaseNotes(entity.getReleaseNotes())
+                .apkDownloadUrl(entity.getApkDownloadUrl())
+                .ipaDownloadUrl(entity.getIpaDownloadUrl())
+                .plistDownloadUrl(entity.getPlistDownloadUrl())
+                .imageDownloadUrl(entity.getImageDownloadUrl())
+                .androidQrUrl(entity.getAndroidQrUrl())
+                .iosQrUrl(entity.getIosQrUrl())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 }

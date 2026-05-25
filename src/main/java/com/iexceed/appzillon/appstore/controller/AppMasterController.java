@@ -5,6 +5,7 @@ import com.iexceed.appzillon.appstore.dto.request.AppMasterRequestDto;
 import com.iexceed.appzillon.appstore.dto.response.AppMasterResponseDto;
 import com.iexceed.appzillon.appstore.service.AppMasterService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -13,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/apps")
@@ -24,6 +27,7 @@ public class AppMasterController {
 
     @Operation(
             summary = "Upload Mobile Application",
+            description = "Uploads APK, IPA, and Image files. Plist and QR codes are generated automatically.",
             security = @SecurityRequirement(name = "JWT")
     )
     @PostMapping(
@@ -42,6 +46,7 @@ public class AppMasterController {
             @RequestPart(value = "ipaFile", required = false)
             MultipartFile ipaFile,
 
+            @Parameter(hidden = true)
             @RequestPart(value = "plistFile", required = false)
             MultipartFile plistFile,
 
@@ -65,5 +70,17 @@ public class AppMasterController {
                 );
 
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "List Uploaded Applications",
+            description = "Fetches a list of uploaded applications. If accessGroup is 'Admin', all records are returned. Otherwise, filtered by accessGroup.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @GetMapping("/list")
+    public ResponseEntity<List<AppMasterResponseDto>> getAppList(
+            @RequestParam("accessGroup") String accessGroup
+    ) {
+        return ResponseEntity.ok(service.getAppList(accessGroup));
     }
 }

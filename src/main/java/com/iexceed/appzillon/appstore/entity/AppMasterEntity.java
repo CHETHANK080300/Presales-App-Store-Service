@@ -72,6 +72,18 @@ public class AppMasterEntity {
     @Column(name = "image_download_url")
     private String imageDownloadUrl;
 
+    @Column(name = "android_qr_path")
+    private String androidQrPath;
+
+    @Column(name = "ios_qr_path")
+    private String iosQrPath;
+
+    @Column(name = "android_qr_url")
+    private String androidQrUrl;
+
+    @Column(name = "ios_qr_url")
+    private String iosQrUrl;
+
     @Column(name = "app_logo")
     private String appLogo;
 
