@@ -1,0 +1,159 @@
+### Environment
+@baseUrl=http://localhost:8093
+
+### Login (valid credentials)
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "Chethan K",
+  "password": "Chethan222@",
+  "deviceInfo": "rest-client"
+}
+
+@authToken={{login.response.body.responseBody.token}}
+@refreshToken={{login.response.body.responseBody.refreshToken}}
+
+### Login (invalid credentials)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "nonexistent",
+  "password": "wrong"
+}
+
+### Validate session
+GET {{baseUrl}}/api/auth/validate-session
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+### Refresh tokens
+# @name refreshTokens
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout
+# @name logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{authToken}}
+
+### Active users list
+# @name activeUsers
+GET {{baseUrl}}/api/active-users
+Authorization: Bearer {{authToken}}
+
+### Active users count (all)
+# @name activeUsersCountAll
+GET {{baseUrl}}/api/active-users/count
+Authorization: Bearer {{authToken}}
+
+### Active users count by role
+# @name activeUsersCountRole
+GET {{baseUrl}}/api/active-users/count?role=admin
+Authorization: Bearer {{authToken}}
+
+### Get user (admin only)
+# @name fetchUser
+GET {{baseUrl}}/api/users/fetch
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Create user (admin only)
+# @name createUser
+POST {{baseUrl}}/api/users/create
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "username": "jeswanth",
+  "password": "jeswanth",
+  "role": "ADMIN",
+  "emailId": "jeswanth@i-exceed.com",
+  "phoneNo": "9090909090",
+  "appId": "APP1",
+  "userGroup": "INTERNAL",
+  "authorisedStatus": "A"
+}
+
+### Update user (admin only)
+# @name updateUser
+POST {{baseUrl}}/api/users/update/jeswanth
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "authorisedStatus": "A"
+}
+
+### Block user (admin only)
+# @name blockUser
+POST {{baseUrl}}/api/users/block/chethan-k
+Authorization: Bearer {{authToken}}
+
+### Unblock user (admin only)
+# @name unblockUser
+POST {{baseUrl}}/api/users/unblock/chethan-k
+Authorization: Bearer {{authToken}}
+
+### Delete user (admin only)
+# @name deleteUser
+DELETE {{baseUrl}}/api/users/delete/jeswanth
+Authorization: Bearer {{authToken}}
+
+### Upload App API
+
+POST {{baseUrl}}/api/v1/apps/upload
+Authorization: Bearer {{authToken}}
+Accept: */*
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="request"
+Content-Type: application/json
+
+{
+  "appName": "MyApp",
+  "bundleId": "com.example.myapp1",
+  "platform": "BOTH",
+  "category": "Retail Banking",
+  "accessGroup": "MyAppGroup",
+  "appExpirySet": "Y",
+  "expirationDate": "2025-06-01",
+  "minOsVerAndroid": "5.0",
+  "minOsVerIos": "10.0",
+  "appDescription": "Sample App",
+  "releaseNotes": "Initial Release",
+  "createdBy": "admin"
+}
+
+--WebAppBoundary
+Content-Disposition: form-data; name="apkFile"; filename="Onboarding.apk"
+Content-Type: application/vnd.android.package-archive
+
+< C:\Users\chethan.k\Downloads\files\Onboarding.apk
+
+--WebAppBoundary
+Content-Disposition: form-data; name="ipaFile"; filename="Onboarding.ipa"
+Content-Type: application/octet-stream
+
+< C:\Users\chethan.k\Downloads\files\Onboarding.ipa
+
+--WebAppBoundary
+Content-Disposition: form-data; name="plistFile"; filename="myapp.plist"
+Content-Type: application/xml
+
+< C:\Users\chethan.k\Downloads\files\myapp.plist
+
+--WebAppBoundary
+Content-Disposition: form-data; name="imageFile"; filename="image.png"
+Content-Type: image/png
+
+< C:\Users\chethan.k\Downloads\files\image.png
+
+--WebAppBoundary--

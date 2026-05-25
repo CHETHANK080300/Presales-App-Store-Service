@@ -1,0 +1,51 @@
+### Upload App API
+
+POST http://localhost:8093/api/v1/apps/upload
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJhcHBJZCI6IkFQUDEiLCJpYXQiOjE3NzkyODQ4MjksImV4cCI6MTc3OTI4NTEyOX0.rgOeEuZBTgs16eXZU8GDg9ucwc0cqo1DyecPOJih0Sk
+Accept: */*
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="request"
+Content-Type: application/json
+
+{
+  "appName": "MyApp",
+  "bundleId": "com.example.myapp",
+  "platform": "BOTH",
+  "category": "Retail Banking",
+  "accessGroup": "MyAppGroup",
+  "appExpirySet": "Y",
+  "expirationDate": "2025-06-01",
+  "minOsVerAndroid": "5.0",
+  "minOsVerIos": "10.0",
+  "appDescription": "Sample App",
+  "releaseNotes": "Initial Release",
+  "createdBy": "admin"
+}
+
+--WebAppBoundary
+Content-Disposition: form-data; name="apkFile"; filename="Onboarding.apk"
+Content-Type: application/vnd.android.package-archive
+
+< C:\Users\chethan.k\Downloads\files\Onboarding.apk
+
+--WebAppBoundary
+Content-Disposition: form-data; name="ipaFile"; filename="Onboarding.ipa"
+Content-Type: application/octet-stream
+
+< C:\Users\chethan.k\Downloads\files\Onboarding.ipa
+
+--WebAppBoundary
+Content-Disposition: form-data; name="plistFile"; filename="myapp.plist"
+Content-Type: application/xml
+
+< C:\Users\chethan.k\Downloads\files\myapp.plist
+
+--WebAppBoundary
+Content-Disposition: form-data; name="imageFile"; filename="image.png"
+Content-Type: image/png
+
+< C:\Users\chethan.k\Downloads\files\image.png
+
+--WebAppBoundary--
