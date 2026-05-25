@@ -84,24 +84,17 @@ public class UserService {
             return resp;
         }
         UserEntity u = opt.get();
-        if (req.getPassword() != null && !req.getPassword().isBlank()) {
-            try {
-                java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-                byte[] hash = digest.digest(req.getPassword().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                StringBuilder sb = new StringBuilder();
-                for (byte b : hash) sb.append(String.format("%02x", b));
-                u.setPassword(sb.toString().toLowerCase());
-            } catch (Exception e) {
-                logger.error("updateUser password hash failed", e);
-                resp.put("error", "Failed to hash password");
-                return resp;
-            }
-        }
+
+        // 5. For Update User API Should not allow to update password, userId, appId, userLocked, passwordFailCount fields.
+        // userId and appId are already ignored because they are not set from req.
+        // password, userLocked, passwordFailCount are explicitly ignored here even if present in request (though request may not have them).
+
         if (req.getRole() != null) u.setRole(req.getRole());
         if (req.getEmailId() != null) u.setEmailId(req.getEmailId());
         if (req.getPhoneNo() != null) u.setPhoneNo(req.getPhoneNo());
         if (req.getUserGroup() != null) u.setUserGroup(req.getUserGroup());
         if (req.getAuthorisedStatus() != null) u.setAuthorisedStatus(req.getAuthorisedStatus());
+
         u.setUpdatedAt(Instant.now());
         userRepository.save(u);
         resp.put("status", "UPDATED");
@@ -162,9 +155,9 @@ public class UserService {
         logger.debug("UserService.fetchAllUsers");
         Map<String, Object> resp = new HashMap<>();
         List<UserEntity> users = userRepository.findAll();
-        /*users.forEach(user -> {
+        users.forEach(user -> {
             user.setPassword(null);
-        });*/
+        });
         resp.put("users", users);
         return resp;
     }

@@ -49,34 +49,33 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        if (request == null || request.getUsername() == null || request.getPassword() == null || request.getUsername().isBlank() || request.getPassword().isBlank()) {
+        if (request == null || request.getUserId() == null || request.getPassword() == null || request.getUserId().isBlank() || request.getPassword().isBlank()) {
             return AuthResponse.error("Invalid input");
         }
 
-        Optional<UserEntity> userOpt = userRepository.findByUsername(request.getUsername());
+        Optional<UserEntity> userOpt = userRepository.findById(request.getUserId());
         if (userOpt.isEmpty()) {
-            logger.warn("Invalid username: {}", request.getUsername());
+            logger.warn("Invalid userId: {}", request.getUserId());
             return AuthResponse.error("User does not exist");
         }
 
         UserEntity user = userOpt.get();
         if ("Y".equalsIgnoreCase(user.getUserLocked())) {
-            logger.warn("Locked account attempt: {}", request.getUsername());
+            logger.warn("Locked account attempt: {}", request.getUserId());
             return AuthResponse.error("User account locked. Contact administrator.");
         }
 
         // new checks: user_status and authorised_status
         if (user.getUserStatus() != null && "BLOCKED".equalsIgnoreCase(user.getUserStatus())) {
-            logger.warn("Blocked account attempt: {}", request.getUsername());
+            logger.warn("Blocked account attempt: {}", request.getUserId());
             return AuthResponse.error("User account blocked. Contact administrator.");
         }
         if (user.getAuthorisedStatus() != null && "U".equalsIgnoreCase(user.getAuthorisedStatus())) {
-            logger.warn("Unauthorised account attempt: {}", request.getUsername());
+            logger.warn("Unauthorised account attempt: {}", request.getUserId());
             return AuthResponse.error("User not authorised to login. Contact administrator.");
         }
 
         String hashed = sha256Hex(request.getPassword());
-        //logger.info("Hashed password: {} and DB password {}", hashed,  request.getPassword());
         if (!hashed.equals(user.getPassword())) {
             // increment fail count
             int fails = user.getPasswordFailCount() == null ? 0 : user.getPasswordFailCount();
@@ -85,11 +84,11 @@ public class AuthService {
             if (fails > maxFailedAttempts) {
                 user.setUserLocked("Y");
                 userRepository.save(user);
-                logger.warn("User locked due to failed attempts: {}", request.getUsername());
+                logger.warn("User locked due to failed attempts: {}", request.getUserId());
                 return AuthResponse.error("User account locked. Contact administrator.");
             }
             userRepository.save(user);
-            logger.warn("Invalid password for user: {}", request.getUsername());
+            logger.warn("Invalid password for user: {}", request.getUserId());
             return AuthResponse.error("Invalid credentials");
         }
 
@@ -100,7 +99,7 @@ public class AuthService {
         // enforce maximum 2 active sessions per user
         long activeCount = sessionRepository.countByUserIdAndStatus(user.getUserId(), "ACTIVE");
         if (activeCount >= 2) {
-            logger.warn("User {} has reached max active sessions ({})", user.getUsername(), activeCount);
+            logger.warn("User {} has reached max active sessions ({})", user.getUserId(), activeCount);
             return AuthResponse.error("Maximum active sessions reached");
         }
 
@@ -138,9 +137,9 @@ public class AuthService {
             logger.warn("Active user creation failed: {}", e.getMessage());
         }
 
-        logger.info("Token generated for user: {}", user.getUsername());
+        logger.info("Token generated for user: {}", user.getUserId());
 
-        return AuthResponse.successWithRefresh(user.getUserId(), user.getRole(), token, String.valueOf(jwtExpiration), refreshToken);
+        return AuthResponse.successWithRefresh(user.getUserId(), user.getUsername(), user.getUserGroup(), user.getRole(), token, String.valueOf(jwtExpiration), refreshToken);
     }
 
     @Transactional
@@ -210,7 +209,7 @@ public class AuthService {
         sessionRepository.delete(oldSession);
 
         logger.info("refresh() success for userId={}", user.getUserId());
-        return AuthResponse.successWithRefresh(user.getUserId(), user.getRole(), newToken, String.valueOf(jwtExpiration), newRefresh);
+        return AuthResponse.successWithRefresh(user.getUserId(), user.getUsername(), user.getUserGroup(), user.getRole(), newToken, String.valueOf(jwtExpiration), newRefresh);
     }
 
     public boolean validateSession(String token) {

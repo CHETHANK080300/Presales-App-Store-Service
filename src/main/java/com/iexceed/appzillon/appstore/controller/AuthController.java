@@ -22,13 +22,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<CommonResponse> login(@RequestBody LoginRequest request) {
-        logger.info("Login API called for username={}", request != null ? request.getUsername() : "null");
+        logger.info("Login API called for userId={}", request != null ? request.getUserId() : "null");
         AuthResponse resp = authService.login(request);
         if (resp.getStatus() != null && resp.getStatus().equals("SUCCESS")) {
-            logger.info("Login successful for username={}", request.getUsername());
+            logger.info("Login successful for userId={}", request.getUserId());
             return ResponseEntity.ok(CommonResponse.success("Login successful", resp));
         } else {
-            logger.warn("Login failed for username={} reason={}", request != null ? request.getUsername() : "null", resp.getError());
+            logger.warn("Login failed for userId={} reason={}", request != null ? request.getUserId() : "null", resp.getError());
             return ResponseEntity.status(400).body(CommonResponse.failure(resp.getError()));
         }
     }
