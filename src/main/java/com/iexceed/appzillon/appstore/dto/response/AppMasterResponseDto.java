@@ -12,4 +12,8 @@ public class AppMasterResponseDto {
     private String status;
     private String message;
     private String appId;
+    private String apkDownloadUrl;
+    private String ipaDownloadUrl;
+    private String plistDownloadUrl;
+    private String imageDownloadUrl;
 }

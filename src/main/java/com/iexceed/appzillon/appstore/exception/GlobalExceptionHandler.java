@@ -43,6 +43,22 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
+        return new ResponseEntity<>(
+                buildResponse(ex.getMessage()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxSizeExceeded(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return new ResponseEntity<>(
+                buildResponse("File size exceeds the allowed limit"),
+                HttpStatus.PAYLOAD_TOO_LARGE
+        );
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
 

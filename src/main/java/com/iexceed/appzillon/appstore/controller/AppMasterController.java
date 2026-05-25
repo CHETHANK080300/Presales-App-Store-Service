@@ -22,7 +22,10 @@ public class AppMasterController {
     private final AppMasterService service;
     private final ObjectMapper objectMapper;
 
-    @Operation(summary = "Upload Mobile Application")
+    @Operation(
+            summary = "Upload Mobile Application",
+            security = @SecurityRequirement(name = "JWT")
+    )
     @PostMapping(
             value = "/upload",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -30,6 +33,7 @@ public class AppMasterController {
     public ResponseEntity<AppMasterResponseDto> uploadApplication(
 
             @RequestPart("request")
+            @Schema(implementation = AppMasterRequestDto.class)
             String requestJson,
 
             @RequestPart(value = "apkFile", required = false)
