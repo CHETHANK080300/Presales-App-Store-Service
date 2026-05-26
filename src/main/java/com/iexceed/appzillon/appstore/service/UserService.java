@@ -1,6 +1,7 @@
 package com.iexceed.appzillon.appstore.service;
 
 import com.iexceed.appzillon.appstore.dto.UserRequest;
+import com.iexceed.appzillon.appstore.dto.response.UserResponseDto;
 import com.iexceed.appzillon.appstore.entity.UserEntity;
 import com.iexceed.appzillon.appstore.repository.UserRepository;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -85,10 +87,6 @@ public class UserService {
         }
         UserEntity u = opt.get();
 
-        // 5. For Update User API Should not allow to update password, userId, appId, userLocked, passwordFailCount fields.
-        // userId and appId are already ignored because they are not set from req.
-        // password, userLocked, passwordFailCount are explicitly ignored here even if present in request (though request may not have them).
-
         if (req.getRole() != null) u.setRole(req.getRole());
         if (req.getEmailId() != null) u.setEmailId(req.getEmailId());
         if (req.getPhoneNo() != null) u.setPhoneNo(req.getPhoneNo());
@@ -150,15 +148,33 @@ public class UserService {
         return resp;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Map<String, Object> fetchAllUsers() {
         logger.debug("UserService.fetchAllUsers");
         Map<String, Object> resp = new HashMap<>();
         List<UserEntity> users = userRepository.findAll();
-        users.forEach(user -> {
-            user.setPassword(null);
-        });
-        resp.put("users", users);
+
+        List<UserResponseDto> userDtos = users.stream()
+                .map(u -> UserResponseDto.builder()
+                        .userId(u.getUserId())
+                        .appId(u.getAppId())
+                        .username(u.getUsername())
+                        .role(u.getRole())
+                        .emailId(u.getEmailId())
+                        .phoneNo(u.getPhoneNo())
+                        .userLocked(u.getUserLocked())
+                        .passwordFailCount(u.getPasswordFailCount())
+                        .createdAt(u.getCreatedAt())
+                        .updatedAt(u.getUpdatedAt())
+                        .userGroup(u.getUserGroup())
+                        .createdBy(u.getCreatedBy())
+                        .authorisedBy(u.getAuthorisedBy())
+                        .userStatus(u.getUserStatus())
+                        .authorisedStatus(u.getAuthorisedStatus())
+                        .build())
+                .collect(Collectors.toList());
+
+        resp.put("users", userDtos);
         return resp;
     }
 }

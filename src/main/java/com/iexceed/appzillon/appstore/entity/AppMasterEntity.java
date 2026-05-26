@@ -45,6 +45,9 @@ public class AppMasterEntity {
     @Column(name = "min_os_ver_ios")
     private String minOsVerIos;
 
+    @Column(name = "app_version")
+    private String appVersion;
+
     @Column(name = "description")
     private String description;
 
