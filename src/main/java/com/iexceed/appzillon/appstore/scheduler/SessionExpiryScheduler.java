@@ -1,7 +1,5 @@
 package com.iexceed.appzillon.appstore.scheduler;
 
-import com.iexceed.appzillon.appstore.entity.ActiveUserEntity;
-import com.iexceed.appzillon.appstore.entity.UserSessionEntity;
 import com.iexceed.appzillon.appstore.repository.ActiveUserRepository;
 import com.iexceed.appzillon.appstore.repository.UserSessionRepository;
 import org.slf4j.Logger;
@@ -11,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 
 @Component
 public class SessionExpiryScheduler {
@@ -31,28 +28,13 @@ public class SessionExpiryScheduler {
     @Transactional
     public void expireSessions() {
         Instant now = Instant.now();
-        List<UserSessionEntity> expired = sessionRepository.findByStatusAndExpireAtBefore("ACTIVE", now);
-        if (expired.isEmpty()) return;
-        logger.info("SessionExpiryScheduler found {} expired sessions", expired.size());
-        for (UserSessionEntity s : expired) {
-            try {
-                s.setStatus("EXPIRED");
-                sessionRepository.save(s);
-                // update active user if exists
-                try {
-                    java.util.Optional<ActiveUserEntity> a = activeUserRepository.findById(s.getSessionKey());
-                    if (a.isPresent()) {
-                        ActiveUserEntity au = a.get();
-                        au.setStatus("EXPIRED");
-                        au.setExpireAt(s.getExpireAt());
-                        activeUserRepository.save(au);
-                    }
-                } catch (Exception ex) {
-                    logger.warn("Failed to update active user for session {}: {}", s.getSessionKey(), ex.getMessage());
-                }
-            } catch (Exception e) {
-                logger.error("Failed to expire session {}: {}", s.getSessionKey(), e.getMessage());
-            }
+        // Delete sessions where refresh token has expired
+        int deletedSessions = sessionRepository.deleteByRefreshExpireAtBefore(now);
+        // Delete active users where access token has expired (and refresh not used to update it)
+        int deletedActiveUsers = activeUserRepository.deleteByExpireAtBefore(now);
+
+        if (deletedSessions > 0 || deletedActiveUsers > 0) {
+            logger.info("SessionExpiryScheduler cleaned up: {} sessions, {} active users", deletedSessions, deletedActiveUsers);
         }
     }
 }

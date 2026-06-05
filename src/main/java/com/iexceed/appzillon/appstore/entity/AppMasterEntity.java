@@ -45,6 +45,9 @@ public class AppMasterEntity {
     @Column(name = "min_os_ver_ios")
     private String minOsVerIos;
 
+    @Column(name = "app_version")
+    private String appVersion;
+
     @Column(name = "description")
     private String description;
 
@@ -56,6 +59,33 @@ public class AppMasterEntity {
 
     @Column(name = "ipa_file_path")
     private String ipaFilePath;
+
+    @Column(name = "plist_file_path")
+    private String plistFilePath;
+
+    @Column(name = "apk_download_url")
+    private String apkDownloadUrl;
+
+    @Column(name = "ipa_download_url")
+    private String ipaDownloadUrl;
+
+    @Column(name = "plist_download_url")
+    private String plistDownloadUrl;
+
+    @Column(name = "image_download_url")
+    private String imageDownloadUrl;
+
+    @Column(name = "android_qr_path")
+    private String androidQrPath;
+
+    @Column(name = "ios_qr_path")
+    private String iosQrPath;
+
+    @Column(name = "android_qr_url")
+    private String androidQrUrl;
+
+    @Column(name = "ios_qr_url")
+    private String iosQrUrl;
 
     @Column(name = "app_logo")
     private String appLogo;

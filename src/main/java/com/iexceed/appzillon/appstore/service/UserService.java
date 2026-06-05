@@ -1,6 +1,7 @@
 package com.iexceed.appzillon.appstore.service;
 
 import com.iexceed.appzillon.appstore.dto.UserRequest;
+import com.iexceed.appzillon.appstore.dto.response.UserResponseDto;
 import com.iexceed.appzillon.appstore.entity.UserEntity;
 import com.iexceed.appzillon.appstore.repository.UserRepository;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -84,24 +86,13 @@ public class UserService {
             return resp;
         }
         UserEntity u = opt.get();
-        if (req.getPassword() != null && !req.getPassword().isBlank()) {
-            try {
-                java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-                byte[] hash = digest.digest(req.getPassword().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                StringBuilder sb = new StringBuilder();
-                for (byte b : hash) sb.append(String.format("%02x", b));
-                u.setPassword(sb.toString().toLowerCase());
-            } catch (Exception e) {
-                logger.error("updateUser password hash failed", e);
-                resp.put("error", "Failed to hash password");
-                return resp;
-            }
-        }
+
         if (req.getRole() != null) u.setRole(req.getRole());
         if (req.getEmailId() != null) u.setEmailId(req.getEmailId());
         if (req.getPhoneNo() != null) u.setPhoneNo(req.getPhoneNo());
         if (req.getUserGroup() != null) u.setUserGroup(req.getUserGroup());
         if (req.getAuthorisedStatus() != null) u.setAuthorisedStatus(req.getAuthorisedStatus());
+
         u.setUpdatedAt(Instant.now());
         userRepository.save(u);
         resp.put("status", "UPDATED");
@@ -157,15 +148,33 @@ public class UserService {
         return resp;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Map<String, Object> fetchAllUsers() {
         logger.debug("UserService.fetchAllUsers");
         Map<String, Object> resp = new HashMap<>();
         List<UserEntity> users = userRepository.findAll();
-        /*users.forEach(user -> {
-            user.setPassword(null);
-        });*/
-        resp.put("users", users);
+
+        List<UserResponseDto> userDtos = users.stream()
+                .map(u -> UserResponseDto.builder()
+                        .userId(u.getUserId())
+                        .appId(u.getAppId())
+                        .username(u.getUsername())
+                        .role(u.getRole())
+                        .emailId(u.getEmailId())
+                        .phoneNo(u.getPhoneNo())
+                        .userLocked(u.getUserLocked())
+                        .passwordFailCount(u.getPasswordFailCount())
+                        .createdAt(u.getCreatedAt())
+                        .updatedAt(u.getUpdatedAt())
+                        .userGroup(u.getUserGroup())
+                        .createdBy(u.getCreatedBy())
+                        .authorisedBy(u.getAuthorisedBy())
+                        .userStatus(u.getUserStatus())
+                        .authorisedStatus(u.getAuthorisedStatus())
+                        .build())
+                .collect(Collectors.toList());
+
+        resp.put("users", userDtos);
         return resp;
     }
 }

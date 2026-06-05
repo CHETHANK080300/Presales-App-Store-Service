@@ -36,6 +36,8 @@ public class AppMasterRequestDto {
 
     private String minOsVerIos;
 
+    private String appVersion;
+
     private String appDescription;
 
     private String releaseNotes;

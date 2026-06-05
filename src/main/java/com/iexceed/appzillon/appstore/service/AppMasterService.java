@@ -3,6 +3,7 @@ package com.iexceed.appzillon.appstore.service;
 import com.iexceed.appzillon.appstore.dto.request.AppMasterRequestDto;
 import com.iexceed.appzillon.appstore.dto.response.AppMasterResponseDto;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 public interface AppMasterService {
 
@@ -13,4 +14,6 @@ public interface AppMasterService {
             MultipartFile plistFile,
             MultipartFile imageFile
     );
+
+    List<AppMasterResponseDto> getAppList(String accessGroup);
 }
